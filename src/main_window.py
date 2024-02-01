@@ -7,11 +7,8 @@ from PySide6.QtWidgets import (
 )
 
 import os
-from glob import glob
 import numpy as np
 import cv2
-from tqdm import tqdm
-from pathlib import Path
 
 class Signals(QObject):
     wheel_controller = Signal(int)

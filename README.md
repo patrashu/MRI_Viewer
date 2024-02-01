@@ -32,11 +32,22 @@ poetry install
 poetry run python main.py
 ```
 
-### Install With Miniconda
+### Install With VirtualEnv
+
+Before install, check your python version==3.10
 
 ```
 python -m venv venv
 .\venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+### Install With Miniconda
+
+```
+conda create -n mri-vis python=3.10 -y
+conda activate mri-vis
 pip install -r requirements.txt
 python main.py
 ```

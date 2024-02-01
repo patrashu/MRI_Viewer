@@ -1,0 +1,4 @@
+.venv
+train_jpg
+valid_jpg
+__pycache__

@@ -54,7 +54,7 @@ python main.py
 
 ### Screen Shot
 
-![expect](https://github.com/patrashu/MRI_Viewer/assets/78347296/ffd692e0-fef2-45fd-9160-9fc01dc613f0)
+![expect](https://github.com/patrashu/MRI_Viewer/assets/78347296/209358eb-5f49-4a1d-96b5-2527e64aed02)
 
 
 ### Function
@@ -62,4 +62,4 @@ python main.py
 - [x] See jpg file with Scroll
 - [x] Drag and Drop .npy file
 - [x] Convert .npy to jpg
-- [ ] visualize csv file
+- [x] visualize csv file

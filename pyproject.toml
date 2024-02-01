@@ -6,13 +6,14 @@ authors = ["patrashu <qhdrmfdl123naver.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.12"
 opencv-python = "^4.9.0.80"
 pillow = "^10.2.0"
 numpy = "^1.26.3"
 pandas = "^2.2.0"
 pyside6 = "^6.6.1"
 tqdm = "^4.66.1"
+pyqtdarktheme = "^2.1.0"
 
 
 [build-system]

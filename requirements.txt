@@ -5,3 +5,7 @@ pandas==2.2.0
 pyside6==6.6.1
 tqdm==4.66.1
 pyqtdarktheme==2.1.0
+fastapi==0.109.0
+uvicorn==0.15.0
+requests==2.26.0
+python-multipart==0.0.9

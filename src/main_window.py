@@ -14,6 +14,7 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
+import requests
 from collections import Counter
 
 
@@ -69,38 +70,16 @@ class ImageLabel(QLabel):
         signal.wheel_controller.emit(event.angleDelta().y())
         
     def preprocess(self, file_path: str):
-        root_path = '/'.join(os.path.dirname(__file__).split('\\')[:-1])
-        method = ""
-        if "train" in file_path:
-            new_file_path = file_path.split("train/")[-1]
-            method = "train_jpg"
-        else:
-            new_file_path = file_path.split("valid/")[-1]
-            method = "valid_jpg"
-        plane = new_file_path.split("/")[0]
-        file_name = new_file_path.split("/")[-1].replace('.npy', '')
-        save_path = os.path.join(root_path, method, plane, file_name)
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        
-            np_img = np.load(file_path)
-            for idx in range(np_img.shape[0]):
-                img = np_img[idx, :, :]
-                img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
-                cv2.imwrite(os.path.join(save_path, f'{idx}.jpg'), img)
-                
-            _info =  {
-                "plane": plane,
-                "save_path": save_path,
-                "file_name": file_name,
-                "method": method,
-                "length": np_img.shape[0]
+        result = requests.post(
+            "http://localhost:8000/preprocess", 
+            files={ 
+                "file": open(file_path, "rb"),
+                "plane": "sagittal"
             }
-            signal.current_file_info.emit(_info)
-        else:
-            print("Already exist")
-            
-            
+        )
+        print(result.json()["message"])
+        signal.current_file_info.emit({})
+
 
 class CSVLabel(QFrame):
     def __init__(self):
@@ -235,20 +214,25 @@ class MainWindow(QMainWindow):
         
     @Slot(dict)
     def set_current_img_folder(self, folder_name: dict):
-        self.file_name = folder_name["file_name"]
-        self.plane = folder_name["plane"]
-        self.save_path = folder_name["save_path"]
-        self.length = folder_name["length"]
+        self.plane = "sagittal"
         self.current_idx = 0
-        self.set_img()
+        # self.set_img()
 
     def set_img(self):
-        _file_name = os.path.join(self.save_path, f'{self.current_idx}.jpg')
-        self.title_label.setText(
-            "Plane: {}, File Name: {}, Length: {}, Index: {}" \
-                .format(self.plane, self.file_name, self.length, self.current_idx)
+        _file_name = requests.get(
+            "http://localhost:8000/result/{}/{}/{}/".format(self.plane, self.current_idx, "original")
         )
-        self.original_label.setPixmap(QPixmap(QImage(_file_name).scaled(640, 640)))
+        img = np.frombuffer(_file_name.content, dtype=np.uint8)
+        print(img.shape)
+        _h, _w, _ch = img.shape
+        qimg = QImage(img, _w, _h, _w*_ch, QImage.Format_RGB888)
+        self.original_label.setPixmap(QPixmap(qimg.scaled(640, 640)))
+        # os.path.join(self.save_path, f'{self.current_idx}.jpg')
+        # self.title_label.setText(
+        #     "Plane: {}, File Name: {}, Length: {}, Index: {}" \
+        #         .format(self.plane, self.file_name, self.length, self.current_idx)
+        # )
+        # self.original_label.setPixmap(QPixmap(QImage(_file_name).scaled(640, 640)))
 
     def next_img(self):
         if self.current_idx < self.length-1:

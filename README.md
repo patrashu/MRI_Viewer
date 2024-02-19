@@ -18,10 +18,10 @@ wget https://download.cs.stanford.edu/deep/MRNet-v1.0.zip
 ┃ ┣ 📂 sagittal
 ┣ 📜 train_abnormal.csv
 ┣ 📜 train_acl.csv
-┣ 📜 train_meniscus.ipynb
+┣ 📜 train_meniscus.csv
 ┣ 📜 valid_abnormal.csv
 ┣ 📜 valid_acl.csv
-┣ 📜 valid_meniscus.ipynb
+┣ 📜 valid_meniscus.csv
 ```
 
 

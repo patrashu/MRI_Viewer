@@ -17,6 +17,9 @@ import pandas as pd
 import requests
 from collections import Counter
 
+import aiohttp
+import asyncio
+
 
 class Signals(QObject):
     wheel_controller = Signal(int)
@@ -77,8 +80,8 @@ class ImageLabel(QLabel):
                 "plane": "sagittal"
             }
         )
-        print(result.json()["message"])
-        signal.current_file_info.emit({})
+        # print(result.json()["message"])
+        signal.current_file_info.emit(result.json())
 
 
 class CSVLabel(QFrame):
@@ -143,7 +146,6 @@ class CSVLabel(QFrame):
         self.title.setText(f"File Name: {file_path.split('/')[-1]}")
         res = [csv_file.iloc[i, 1] for i in range(csv_file.shape[0])]
         res = Counter(res)
-        print(res)
         keys, values = list(res.keys()), list(res.values())
         cat_dict = {0: "Normal", 1: "Abnormal"}
  
@@ -164,7 +166,6 @@ class CSVLabel(QFrame):
 
 
 class MainWindow(QMainWindow):
-    
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Knee MRI Viewer")
@@ -213,26 +214,20 @@ class MainWindow(QMainWindow):
         signal.current_file_info.connect(self.set_current_img_folder)
         
     @Slot(dict)
-    def set_current_img_folder(self, folder_name: dict):
+    def set_current_img_folder(self, response: dict):
         self.plane = "sagittal"
+        self.length = response["length"]
         self.current_idx = 0
-        # self.set_img()
+        self.set_img()
 
-    def set_img(self):
+    async def set_img(self):
         _file_name = requests.get(
             "http://localhost:8000/result/{}/{}/{}/".format(self.plane, self.current_idx, "original")
         )
-        img = np.frombuffer(_file_name.content, dtype=np.uint8)
-        print(img.shape)
-        _h, _w, _ch = img.shape
-        qimg = QImage(img, _w, _h, _w*_ch, QImage.Format_RGB888)
-        self.original_label.setPixmap(QPixmap(qimg.scaled(640, 640)))
-        # os.path.join(self.save_path, f'{self.current_idx}.jpg')
-        # self.title_label.setText(
-        #     "Plane: {}, File Name: {}, Length: {}, Index: {}" \
-        #         .format(self.plane, self.file_name, self.length, self.current_idx)
-        # )
-        # self.original_label.setPixmap(QPixmap(QImage(_file_name).scaled(640, 640)))
+        img = np.array(_file_name.json()["img"], dtype=np.uint8)
+        _h, _w = img.shape
+        qimg = QImage(img, _w, _h, _w*1, QImage.Format_Grayscale8)
+        self.original_label.setPixmap(QPixmap.fromImage(qimg.scaled(640, 640)))
 
     def next_img(self):
         if self.current_idx < self.length-1:

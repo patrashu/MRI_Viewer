@@ -4,7 +4,8 @@ from PIL import Image
 
 import uvicorn
 from fastapi import FastAPI, File, UploadFile
-from pydantic import BaseModel, Base64Bytes
+from pydantic import BaseModel, Base64Bytes, ConfigDict
+from fastapi.middleware.cors import CORSMiddleware
 
 
 ###################################################################
@@ -90,7 +91,8 @@ class ResultItems(BaseModel):
     
 
 class ResultItem(BaseModel):
-    img: Base64Bytes
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra='ignore') 
+    img: list | Base64Bytes
 
 
 class TestResult(BaseModel):
@@ -102,17 +104,26 @@ class TestResult(BaseModel):
 app = FastAPI()
 controller = Controller()
 
+# CORS 설정 추가
+origins = ["*"]  # 또는 필요한 도메인 리스트
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 @app.post("/preprocess") 
 async def preprocess(file: UploadFile = File(...), plane: str = "sagittal") -> dict:        
     np_array = np.load(file.file)
     # add model inference
-    print(np_array.shape)
     
     controller.set_res_dict(np_array, plane)
     print(controller.get_res_dict())
-    print("preprocess done")
-    return {"message": "success"}
+    return {"length": np_array.shape[0]}
 
 
 @app.get("/result/{plane}/{idx}/{method}", response_model=ResultItem)
@@ -122,11 +133,8 @@ async def get_result_by_idx(plane: str, idx: int, method: str) -> ResultItem:
     Please note that the result is a dictionary, so the client can get the result by call function get_res_dict_item_by_key.
     """
     res_item = controller.get_res_dict_item(plane, idx, method)
-    print(res_item.shape)
     return { 
-        "result": {
-            "img": res_item.tobytes(),
-        }
+        "img": res_item.tolist(),
     }
     
     

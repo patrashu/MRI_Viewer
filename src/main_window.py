@@ -220,7 +220,7 @@ class MainWindow(QMainWindow):
         self.current_idx = 0
         self.set_img()
 
-    async def set_img(self):
+    def set_img(self):
         _file_name = requests.get(
             "http://localhost:8000/result/{}/{}/{}/".format(self.plane, self.current_idx, "original")
         )

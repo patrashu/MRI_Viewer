@@ -2,3 +2,5 @@
 train_jpg
 valid_jpg
 __pycache__
+*.dcm
+*.npy

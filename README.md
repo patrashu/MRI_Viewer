@@ -29,7 +29,8 @@ wget https://download.cs.stanford.edu/deep/MRNet-v1.0.zip
 
 ```
 poetry install
-poetry run python main.py
+poetry run python main.py  # pyqt
+poetry run uvicorn backend:app --reload  # fastapi
 ```
 
 ### Install With VirtualEnv
@@ -40,7 +41,8 @@ Before install, check your python version==3.10
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
-python main.py
+python main.py  # pyqt
+uvicorn backend:app --reload  # fastapi
 ```
 
 ### Install With Miniconda
@@ -49,13 +51,13 @@ python main.py
 conda create -n mri-vis python=3.10 -y
 conda activate mri-vis
 pip install -r requirements.txt
-python main.py
+python main.py  # pyqt
+uvicorn backend:app --reload  # fastapi
 ```
 
 ### Screen Shot
 
 ![expect](https://github.com/patrashu/MRI_Viewer/assets/78347296/209358eb-5f49-4a1d-96b5-2527e64aed02)
-
 
 ### Function
 
@@ -63,3 +65,4 @@ python main.py
 - [x] Drag and Drop .npy file
 - [x] Convert .npy to jpg
 - [x] visualize csv file
+- [x] Add fastapi Test code

@@ -10,23 +10,23 @@ from PySide6.QtCharts import (
     QChartView, QLineSeries, QValueAxis
 )
 
-
 import os
-from collections import Counter
-
 import cv2
-from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from glob import glob
+import requests
+from collections import Counter
 
+import aiohttp
+import asyncio
 
 
 class Signals(QObject):
     wheel_controller = Signal(int)
     current_file_info = Signal(dict)
-
+    
 signal = Signals()
+
 
 
 class ImageLabel(QLabel):
@@ -43,7 +43,6 @@ class ImageLabel(QLabel):
             }
         """
         )
-        # all_signals.image_size.emit("")
         self.setObjectName(obj_name)
 
     def setPixmap(self, image):
@@ -69,47 +68,20 @@ class ImageLabel(QLabel):
             event.accept()
         else:
             event.ignore()
-
+            
     def wheelEvent(self, event):
         signal.wheel_controller.emit(event.angleDelta().y())
-
+        
     def preprocess(self, file_path: str):
-        root_path = '/'.join(os.path.dirname(__file__).split('\\')[:-1])
-        method = ""
-        csv_paths = None
-        if "train" in file_path:
-            new_csv_path = file_path.split("train/")[0]
-            new_file_path = file_path.split("train/")[-1]
-            method = "train_jpg"
-            csv_paths = sorted(glob(os.path.join(new_csv_path, "train*.csv")))
-        else:
-            new_csv_path = file_path.split("train/")[0]
-            new_file_path = file_path.split("valid/")[-1]
-            method = "valid_jpg"
-            csv_paths = sorted(glob(os.path.join(new_csv_path, "valid*.csv")))
-        
-        plane = new_file_path.split("/")[0]
-        file_name = new_file_path.split("/")[-1].replace('.npy', '')
-        save_path = os.path.join(root_path, method, plane, file_name)
-        np_img = np.load(file_path)
-        
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-            for idx in range(np_img.shape[0]):
-                img = np_img[idx, :, :]
-                img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
-                cv2.imwrite(os.path.join(save_path, f'{idx}.jpg'), img)
-                
-        csvs = [pd.read_csv(csv_path) for csv_path in csv_paths]
-        _info =  {
-            "plane": plane,
-            "save_path": save_path,
-            "file_name": file_name,
-            "method": method,
-            "length": np_img.shape[0],
-            "csvs": csvs,
-        }
-        signal.current_file_info.emit(_info)
+        result = requests.post(
+            "http://localhost:8000/preprocess", 
+            files={ 
+                "file": open(file_path, "rb"),
+                "plane": "sagittal"
+            }
+        )
+        # print(result.json()["message"])
+        signal.current_file_info.emit(result.json())
 
 
 class CSVLabel(QFrame):
@@ -190,14 +162,15 @@ class CSVLabel(QFrame):
         self.axis_x.append(self.categories)
         self.chart.setAxisX(self.axis_x)
         self.chart_view.update()
+        
 
 
 class MainWindow(QMainWindow):
-
     def __init__(self) -> None:
         super().__init__()
+        self.setWindowTitle("Knee MRI Viewer")
         self.initial_window()
-
+        
     def initial_window(self) -> None:
         self.setFixedSize(QSize(1020, 800))
         main_widget = QWidget()
@@ -205,7 +178,6 @@ class MainWindow(QMainWindow):
         
         left_layout = QVBoxLayout()
         self.title_label = QLabel("")
-        self.title_label.setStyleSheet("font-size: 15px;")
         self.title_label.setAlignment(Qt.AlignCenter)
         left_layout.addWidget(self.title_label)
         
@@ -242,41 +214,31 @@ class MainWindow(QMainWindow):
         signal.current_file_info.connect(self.set_current_img_folder)
         
     @Slot(dict)
-    def set_current_img_folder(self, folder_name: dict):
-        self.file_name = folder_name["file_name"]
-        self.plane = folder_name["plane"]
-        self.save_path = folder_name["save_path"]
-        self.length = folder_name["length"]
-        self.labels = []
-        for csv in folder_name["csvs"]:
-            csv.columns = ["file_name", "label"]
-            self.labels.append(
-                csv.loc[csv["file_name"] == int(self.file_name), 'label'].values[0]
-            )
+    def set_current_img_folder(self, response: dict):
+        self.plane = "sagittal"
+        self.length = response["length"]
         self.current_idx = 0
         self.set_img()
 
     def set_img(self):
-        _file_name = os.path.join(self.save_path, f'{self.current_idx}.jpg')
-        self.title_label.setText(
-            "Plane: {}, File Name: {}, Length: {}, Index: {}, abnormal: {}, acl: {}, meniscus: {}" \
-                .format(
-                    self.plane, self.file_name, self.length, self.current_idx, 
-                    self.labels[0], self.labels[1], self.labels[2]
-                )
+        _file_name = requests.get(
+            "http://localhost:8000/result/{}/{}/{}/".format(self.plane, self.current_idx, "original")
         )
-        self.original_label.setPixmap(QPixmap(QImage(_file_name).scaled(640, 640)))
+        img = np.array(_file_name.json()["img"], dtype=np.uint8)
+        _h, _w = img.shape
+        qimg = QImage(img, _w, _h, _w*1, QImage.Format_Grayscale8)
+        self.original_label.setPixmap(QPixmap.fromImage(qimg.scaled(640, 640)))
 
     def next_img(self):
         if self.current_idx < self.length-1:
             self.current_idx += 1
             self.set_img()
-
+        
     def formal_img(self):
         if self.current_idx > 0:
             self.current_idx -= 1
             self.set_img()
-
+            
     @Slot(int)    
     def change_idx(self, value: int):
         if value > 0:

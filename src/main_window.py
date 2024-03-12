@@ -83,7 +83,7 @@ class ImageLabel(QLabel):
             method = "train_jpg"
             csv_paths = sorted(glob(os.path.join(new_csv_path, "train*.csv")))
         else:
-            new_csv_path = file_path.split("train/")[0]
+            new_csv_path = file_path.split("valid/")[0]
             new_file_path = file_path.split("valid/")[-1]
             method = "valid_jpg"
             csv_paths = sorted(glob(os.path.join(new_csv_path, "valid*.csv")))
@@ -249,7 +249,14 @@ class MainWindow(QMainWindow):
         self.length = folder_name["length"]
         self.labels = []
         for csv in folder_name["csvs"]:
+            new_data = {
+                csv.columns[0]: int(csv.columns[0]),
+                csv.columns[1]: csv.columns[1]
+            }
+            csv.loc[len(csv)] = new_data
             csv.columns = ["file_name", "label"]
+            csv = csv.sort_values(by="file_name")
+            print(csv)
             self.labels.append(
                 csv.loc[csv["file_name"] == int(self.file_name), 'label'].values[0]
             )

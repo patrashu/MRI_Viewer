@@ -1,10 +1,5 @@
 ## Knee MRI dataset Viewer
 
-### Dataset Link
-```
-wget https://download.cs.stanford.edu/deep/MRNet-v1.0.zip
-```
-
 ### Dataset Structure
 ```
 📦${DATASET_ROOT}
@@ -54,10 +49,6 @@ pip install -r requirements.txt
 python main.py  # pyqt
 uvicorn backend:app --reload  # fastapi
 ```
-
-### Screen Shot
-
-![expect](https://github.com/patrashu/MRI_Viewer/assets/78347296/209358eb-5f49-4a1d-96b5-2527e64aed02)
 
 ### Function
 
